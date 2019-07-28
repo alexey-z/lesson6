@@ -16,35 +16,42 @@ struct m_allocator {
 	};
 
 	void *p = nullptr;
+	void *c = nullptr;
 	std::size_t r_s = 0;
+	void *ub = nullptr;
 	std::size_t *reserved_size = &r_s;
 	void **reserved = &p;
+	void **current = &c;
 
 	T *allocate(std::size_t n) {
-		if (*reserved) {
-			auto r = (T*)*reserved;
-			T* p = reinterpret_cast<T *>(*reserved);
-			if (*reserved_size >= n * sizeof(T)) {
-				r -= n * sizeof(T);
-				*reserved_size -= n * sizeof(T);
-//				std::cout << "return reserved space" << std::endl;
-			} else {
-				*reserved = nullptr;
-				auto p = std::malloc(n * sizeof(T));
-			}
-			return p;
+		if (*reserved_size >= n) {
+			auto ptr = reinterpret_cast<T *>(*current);
+			auto c_r = (T*)*current + n;
+			*current = reinterpret_cast<T *>(c_r);
+			*reserved_size -= n;
+			return ptr;
+		} else {
+			auto ptr = std::malloc(n * sizeof(T));
+			return reinterpret_cast<T *>(ptr);
 		}
-		auto p = std::malloc(n * sizeof(T));
-		return reinterpret_cast<T *>(p);
+		auto new_pt = std::malloc(n * sizeof(T));
+		return reinterpret_cast<T *>(new_pt);
 	}
 
 	void reserve(std::size_t n) {
 		*reserved = (T*)std::malloc(n * sizeof(T));
-		*reserved_size = std::size_t(n * sizeof(T));
+		*reserved_size = std::size_t(n);
+		*current = *reserved;
+		ub = (T*)*reserved + n;
+		std::cout << "UB: " << ub << std::endl;
 	}
 
 	void deallocate(T *point, std::size_t n) {
-		std::free(point);
+		std::cout << "Deallocating: " << ub << std::endl;
+		if (point < *reserved || point > ub)
+			std::free(point);
+		if (point == *reserved)
+			std::free(point);
 	}
 
 	template<typename U, typename ...Args>
@@ -57,8 +64,11 @@ struct m_allocator {
 	m_allocator(const m_allocator<U> &p) {
 		reserved = p.reserved;
 		reserved_size = p.reserved_size;
+		current = p.current;
+		ub = p.ub;
 	}
 
+	~m_allocator() {  };
 	void destroy(T *p){
 		p->~T();
 	}
@@ -103,7 +113,7 @@ int main(int, char *[]) {
 	}
 
 	std::cout << "map_prealloc:" << std::endl;
-	for (auto const& [key, val] : map_extra) {
+	for (auto const& [key, val] : map_prealloc) {
 		std::cout << key << ":" << val << std::endl;
 	}
 
