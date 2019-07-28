@@ -27,7 +27,7 @@ struct m_allocator {
 			if (*reserved_size >= n * sizeof(T)) {
 				r -= n * sizeof(T);
 				*reserved_size -= n * sizeof(T);
-				std::cout << "return reserved space" << std::endl;
+//				std::cout << "return reserved space" << std::endl;
 			} else {
 				*reserved = nullptr;
 				auto p = std::malloc(n * sizeof(T));
