@@ -18,7 +18,8 @@ struct m_allocator {
 	void *p = nullptr;
 	void *c = nullptr;
 	std::size_t r_s = 0;
-	void *ub = nullptr;
+	void *upper_bound = nullptr;
+	void **ub = &upper_bound;
 	std::size_t *reserved_size = &r_s;
 	void **reserved = &p;
 	void **current = &c;
@@ -42,16 +43,18 @@ struct m_allocator {
 		*reserved = (T*)std::malloc(n * sizeof(T));
 		*reserved_size = std::size_t(n);
 		*current = *reserved;
-		ub = (T*)*reserved + n;
-		std::cout << "UB: " << ub << std::endl;
+		*ub = (T*)(*reserved)+n;
 	}
 
 	void deallocate(T *point, std::size_t n) {
-		std::cout << "Deallocating: " << ub << std::endl;
-		if (point < *reserved || point > ub)
+		if (point < *reserved || point > *ub) {
 			std::free(point);
-		if (point == *reserved)
+			return;
+		}
+		if (point == *reserved) {
 			std::free(point);
+			return;
+		}
 	}
 
 	template<typename U, typename ...Args>
