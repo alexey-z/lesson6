@@ -77,47 +77,89 @@ struct m_allocator {
 	}
 
 };
+template <typename T, typename A>
+class my_container {
+	public:
+		my_container<T, A>() {
+		}
+		void insert(T num) {
+			if (size != 0 && (end+num) >= alloc_end) {
+				auto new_alloc = allocator.allocate(sizeof(T)*size+(end-start));
+				T* na = new_alloc;
+				for (auto i = 0; i < size; i++) {
+					na = std::move(start+i);
+					na++;
+				}
+				allocator.deallocate(start, size);
+				start = new_alloc;
+				end = na;
+				*end = num;
+				end++;
+				alloc_end = new_alloc + (sizeof(T)*size+(end-start));
+				size++;
+			} else {
+				start = allocator.allocate(sizeof(T));
+				*start = num;
+				end = start+(sizeof(T));
+				alloc_end = end;
+				size = 1;
+			}
+		}
 
+		std::size_t get_size() {
+			return size;
+		}
+
+		T get_elem(int i) {
+			return *reinterpret_cast<T *>(start+sizeof(T)*i);
+		}
+
+		A get_allocator() {
+			return allocator;
+		}
+
+	private:
+		A allocator;
+		T *start=nullptr;
+		T *end=nullptr;
+		T *alloc_end=nullptr;
+		std::size_t size=0;
+};
+
+int fact(int n) {
+	int f=1;
+	for (int i = 1; i <= n; i++) {
+		f=f*i;
+	}
+	return f;
+}
 
 int main(int, char *[]) {
 
-	auto prealloc_vector = std::vector<int, m_allocator<int>>{};
-	prealloc_vector.reserve(5);
-	for (std::size_t i = 0; i<5; i++) {
-		prealloc_vector.emplace_back(i);
-	}
-	for (std::size_t i = 0; i<5; i++) {
-		std::cout << i << std::endl;
-	}
-
 	auto map_basic = std::map<int, int>{};
-	for (std::size_t i = 0; i < 5; i++) {
-		map_basic.emplace(i,i);
-		std::cout << std::endl;
+	for (std::size_t i = 0; i < 10; i++) {
+		map_basic.emplace(i,fact(i));
 	}
-	std::cout << "map_basic:" << std::endl;
 	for (auto const& [key, val] : map_basic) {
-		std::cout << key << ":" << val << std::endl;
-	}
-
-	auto map_extra = std::map<int, int, std::less<int>, m_allocator<std::pair<const int, int>>>{};
-	for (std::size_t i = 0; i < 5; i++) {
-		map_extra.emplace(i,i);
-	}
-	std::cout << "map_extra:" << std::endl; 
-	for (auto const& [key, val] : map_extra) {
-		std::cout << key << ":" << val << std::endl;
+		std::cout << key << " " << val << std::endl;
 	}
 
 	auto map_prealloc = std::map<int, int, std::less<int>, m_allocator<std::_Rb_tree_node<std::pair<const int, int> >>>{};
-	map_prealloc.get_allocator().reserve(5);
+	map_prealloc.get_allocator().reserve(10);
 	for (std::size_t i = 0; i < 10; i++) {
-		map_prealloc.emplace(i,i);
+		map_prealloc.emplace(i,fact(i));
 	}
 
-	std::cout << "map_prealloc:" << std::endl;
 	for (auto const& [key, val] : map_prealloc) {
-		std::cout << key << ":" << val << std::endl;
+		std::cout << key << " " << val << std::endl;
+	}
+
+	auto cont = my_container<int, std::allocator<int>>();
+	for (std::size_t i = 0; i < 10; i++) {
+		cont.insert(i);
+	}
+	for (std::size_t i = 0; i < 10; i++) {
+		std::cout << cont.get_elem(i) << std::endl;
 	}
 
 	return 0;
