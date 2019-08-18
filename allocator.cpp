@@ -86,6 +86,7 @@ class my_container {
 			if (reserved_left > 0) {
 				auto old_size = size;
 				*end = num;
+				size++;
 				end++;
 				reserved_left--;
 				return;
