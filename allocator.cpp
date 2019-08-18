@@ -83,6 +83,14 @@ class my_container {
 		my_container<value_type, allocator_type>() {
 		}
 		void insert(value_type num) {
+			if (reserved_left > 0) {
+				auto old_size = size;
+				*end = num;
+				end++;
+				reserved_left--;
+				return;
+			}
+
 			if (size != 0) {
 				auto old_size = size;
 				size++;
@@ -102,6 +110,12 @@ class my_container {
 				end = start+sizeof(value_type);
 				size = 1;
 			}
+		}
+
+		void reserve(int n) {
+			start = allocator.allocate(n);
+			reserved_left = n;
+			end = start;
 		}
 
 		std::size_t get_size() {
@@ -124,6 +138,7 @@ class my_container {
 		T *start=nullptr;
 		T *end=nullptr;
 		std::size_t size=0;
+		std::size_t reserved_left=0;
 };
 
 int fact(int n) {
@@ -163,7 +178,7 @@ int main(int, char *[]) {
 	}
 
 	auto cont2 = my_container<int, m_allocator<int>>();
-	cont2.get_allocator().reserve(10);
+	cont2.reserve(10);
 	for (std::size_t i = 0; i < 10; i++) {
 		cont2.insert(i);
 	}
