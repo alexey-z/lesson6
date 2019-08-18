@@ -77,31 +77,32 @@ struct m_allocator {
 	}
 
 };
-template <typename T, typename A>
+template <typename T, typename A=std::allocator<T>>
 class my_container {
 	public:
-		my_container<T, A>() {
+		typedef T value_type;
+		typedef A allocator_type;
+
+		my_container<value_type, allocator_type>() {
 		}
-		void insert(T num) {
-			if (size != 0 && (end+num) >= alloc_end) {
-				auto new_alloc = allocator.allocate(sizeof(T)*size+(end-start));
-				T* na = new_alloc;
-				for (auto i = 0; i < size; i++) {
-					na = std::move(start+i);
+		void insert(value_type num) {
+			if (size != 0) {
+				auto old_size = size;
+				size++;
+				auto new_alloc = allocator.allocate(size);
+				value_type* na = new_alloc;
+				for (auto i = 0; i < old_size; i++) {
+					*na = *(start+i);
 					na++;
 				}
-				allocator.deallocate(start, size);
+				allocator.deallocate(start,old_size);
 				start = new_alloc;
-				end = na;
-				*end = num;
-				end++;
-				alloc_end = new_alloc + (sizeof(T)*size+(end-start));
-				size++;
-			} else {
-				start = allocator.allocate(sizeof(T));
+				*na = num;
+				end = new_alloc+sizeof(value_type)*size;
+			} else if (size == 0){
+				start = allocator.allocate(1);
 				*start = num;
-				end = start+(sizeof(T));
-				alloc_end = end;
+				end = start+sizeof(value_type);
 				size = 1;
 			}
 		}
@@ -110,19 +111,21 @@ class my_container {
 			return size;
 		}
 
-		T get_elem(int i) {
-			return *reinterpret_cast<T *>(start+sizeof(T)*i);
+		value_type get_elem(int i) {
+			return *reinterpret_cast<value_type *>(start+i);
 		}
 
-		A get_allocator() {
+		allocator_type get_allocator() {
 			return allocator;
+		}
+		~my_container() {
+			allocator.deallocate(start,size);
 		}
 
 	private:
 		A allocator;
 		T *start=nullptr;
 		T *end=nullptr;
-		T *alloc_end=nullptr;
 		std::size_t size=0;
 };
 
@@ -154,12 +157,21 @@ int main(int, char *[]) {
 		std::cout << key << " " << val << std::endl;
 	}
 
-	auto cont = my_container<int, std::allocator<int>>();
+	auto cont = my_container<int>();
 	for (std::size_t i = 0; i < 10; i++) {
 		cont.insert(i);
 	}
 	for (std::size_t i = 0; i < 10; i++) {
 		std::cout << cont.get_elem(i) << std::endl;
+	}
+
+	auto cont2 = my_container<int, m_allocator<int>>();
+	cont2.get_allocator().reserve(10);
+	for (std::size_t i = 0; i < 10; i++) {
+		cont2.insert(i);
+	}
+	for (std::size_t i = 0; i < 10; i++) {
+		std::cout << cont2.get_elem(i) << std::endl;
 	}
 
 	return 0;
