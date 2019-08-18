@@ -47,11 +47,8 @@ struct m_allocator {
 	}
 
 	void deallocate(T *point, std::size_t n) {
-		if (point < *reserved || point > *ub) {
-			std::free(point);
-			return;
-		}
-		if (point == *reserved) {
+		// Don't free in the middle of reserved space
+		if (point < *reserved || point > *ub || point == *reserved) {
 			std::free(point);
 			return;
 		}
