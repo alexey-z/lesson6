@@ -86,40 +86,14 @@ class my_container {
 		my_container<value_type, allocator_type>() {
 		}
 		void insert(value_type num) {
-			if (reserved_left > 0) {
-				auto old_size = size;
-				*end = num;
-				size++;
-				end++;
-				reserved_left--;
-				return;
-			}
+			value_type* v = allocator.allocate(1);
+			allocator.construct(v, num);
 
-			if (size != 0) {
-				auto old_size = size;
-				size++;
-				auto new_alloc = allocator.allocate(size);
-				value_type* na = new_alloc;
-				for (auto i = 0; i < old_size; i++) {
-					*na = *(start+i);
-					na++;
-				}
-				allocator.deallocate(start,old_size);
-				start = new_alloc;
-				*na = num;
-				end = new_alloc+sizeof(value_type)*size;
-			} else if (size == 0){
-				start = allocator.allocate(1);
-				*start = num;
-				end = start+sizeof(value_type);
-				size = 1;
-			}
-		}
-
-		void reserve(int n) {
-			start = allocator.allocate(n);
-			reserved_left = n;
-			end = start;
+			list node;
+			node.v = v;
+			node.next = end;
+			end = &node;
+			size++;
 		}
 
 		std::size_t get_size() {
@@ -127,22 +101,39 @@ class my_container {
 		}
 
 		value_type get_elem(int i) {
-			return *reinterpret_cast<value_type *>(start+i);
+			auto pos = size - i;
+			//std::cout << "end "<< end->v << ": "<< *end->v <<std::endl;
+			list* p = end;
+			//std::cout << "p "<< p->v << ": "<< *p->v <<std::endl;
+			//std::cout << "end "<< end->v << ": "<< *end->v <<std::endl;
+			//std::cout << "end "<< end->v << ": "<< *end->next->v <<std::endl;
+			for (auto a = 0; a < pos; a++) {
+				//std::cout << "p" << *p->v << std::endl;
+				p=p->next;
+			}
+			return *p->v;
 		}
 
 		allocator_type get_allocator() {
 			return allocator;
 		}
 		~my_container() {
-			allocator.deallocate(start,size);
+			for (auto i=0; i<size; i++)
+			{
+				list* p = end->next;
+				allocator.deallocate(end->v,1);
+				end = p;
+			}
 		}
 
 	private:
-		A allocator;
-		T *start=nullptr;
-		T *end=nullptr;
+		struct list {
+			list* next=nullptr;
+			value_type* v=nullptr;
+		};
+		list* end = nullptr;
+		allocator_type allocator;
 		std::size_t size=0;
-		std::size_t reserved_left=0;
 };
 
 int fact(int n) {
