@@ -2,7 +2,7 @@
 #include <vector>
 #include <iostream>
 
-template<typename T>
+template<typename T, int N=10>
 struct m_allocator {
 	using value_type = T;
 	using pointer = T*;
@@ -59,7 +59,9 @@ struct m_allocator {
 		new(p) U(std::forward<Args>(args)...); // construct U()????
 	};
 
-	m_allocator() = default;
+	m_allocator() {
+		reserve(N);
+	}
 	template<typename U>
 	m_allocator(const m_allocator<U> &p) {
 		reserved = p.reserved;
@@ -161,7 +163,6 @@ int main(int, char *[]) {
 	}
 
 	auto map_prealloc = std::map<int, int, std::less<int>, m_allocator<std::_Rb_tree_node<std::pair<const int, int> >>>{};
-	map_prealloc.get_allocator().reserve(10);
 	for (std::size_t i = 0; i < 10; i++) {
 		map_prealloc.emplace(i,fact(i));
 	}
@@ -179,7 +180,6 @@ int main(int, char *[]) {
 	}
 
 	auto cont2 = my_container<int, m_allocator<int>>();
-	cont2.reserve(10);
 	for (std::size_t i = 0; i < 10; i++) {
 		cont2.insert(i);
 	}
