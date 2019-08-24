@@ -18,7 +18,7 @@
         [
         {"includePattern": "\./(.*\.deb)", "uploadPattern": "/$1",
             "matrixParams": {
-                    "deb_distribution": "xenial",
+                    "deb_distribution": "bionic",
                     "deb_component": "main",
                     "deb_architecture": "amd64"}
         }
