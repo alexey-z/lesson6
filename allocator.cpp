@@ -68,6 +68,7 @@ struct m_allocator {
 		reserved_size = p.reserved_size;
 		current = p.current;
 		ub = p.ub;
+		N = p.N;
 	}
 
 	~m_allocator() {  };
@@ -162,7 +163,7 @@ int main(int, char *[]) {
 		std::cout << key << " " << val << std::endl;
 	}
 
-	auto map_prealloc = std::map<int, int, std::less<int>, m_allocator<std::_Rb_tree_node<std::pair<const int, int> >>>{};
+	auto map_prealloc = std::map<int, int, std::less<int>, m_allocator<std::pair<const int, int>>>();
 	for (std::size_t i = 0; i < 10; i++) {
 		map_prealloc.emplace(i,fact(i));
 	}
